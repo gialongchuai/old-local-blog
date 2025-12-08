@@ -1,7 +1,7 @@
 import React from 'react';
 import logo from './logo.svg';
-import CreatePost from './page/blog/component/CreatePost/CreatePost';
-import Blog from './page/blog/component';
+import CreatePost from './pages/blog/component/CreatePost/CreatePost';
+import Blog from './pages/blog';
 
 function App() {
   return (
