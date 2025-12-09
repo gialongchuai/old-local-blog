@@ -14,7 +14,7 @@ interface BlogState {
 }
 
 const initialState: BlogState = {
-  postList: initialPostList,
+  postList: [],
   editingPost: null,
 };
 
@@ -57,6 +57,11 @@ const blogSlice = createSlice({
       });
     },
   },
+  extraReducers: (builder) => {
+    builder.addCase('blog/getPostListSuccess', (state, action: any) => {
+      state.postList = action.payload;
+    })
+  }
   // extraReducers : có thể tim hiểu cho addMatcher và defaultmathc gì gì đó.
   // hình như là nó có builder như useReduce nhưng nó không gợi ý action hay sao đó
   // lên doc đọc thêm nha :()
