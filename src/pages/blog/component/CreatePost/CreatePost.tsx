@@ -9,7 +9,7 @@ import {
   cacelEditingPost,
   editingPost,
   updatePost,
-} from "../../blog.reducer";
+} from "../../blog.slice";
 import { RootState } from "../../../../store";
 
 const initialState: Post = {
@@ -30,9 +30,7 @@ export default function CreatePost() {
   );
 
   useEffect(() => {
-    if (isEditingPost) {
-      setFormData(isEditingPost || initialState);
-    }
+    isEditingPost !== null ? setFormData(isEditingPost) : setFormData(initialState)
   }, [isEditingPost]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -154,7 +152,7 @@ export default function CreatePost() {
               setFormData((pre) => {
                 return {
                   ...pre,
-                  checked: event.target.checked,
+                  published: event.target.checked,
                 };
               });
             }}

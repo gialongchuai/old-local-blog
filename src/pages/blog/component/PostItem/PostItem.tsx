@@ -2,7 +2,7 @@ import { FormEvent, useState } from "react";
 import { Post } from "../../../../types/blog.type";
 import { initialPostList } from "../../../../constants/blog";
 import { useDispatch } from "react-redux";
-import { deletePost } from "../../blog.reducer";
+import { deletePost } from "../../blog.slice";
 
 interface ItemPostType {
   post: Post
