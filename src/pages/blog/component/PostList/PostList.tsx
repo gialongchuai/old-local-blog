@@ -1,7 +1,7 @@
 import { useDispatch, useSelector } from "react-redux";
 import PostItem from "../PostItem";
 import { RootState } from "../../../../store";
-import { cacelEditingPost, deletePost, editingPost } from "../../blog.reducer";
+import { deletePost, editingPost } from "../../blog.reducer";
 
 export default function PostList() {
   const postList = useSelector((state: RootState) => state.blog.postList);

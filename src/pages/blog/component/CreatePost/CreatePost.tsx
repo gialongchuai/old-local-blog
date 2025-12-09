@@ -6,7 +6,7 @@ import { title } from "process";
 import { useDispatch, useSelector } from "react-redux";
 import {
   addPost,
-  cacelEditingPost,
+  cancelEditingPost,
   editingPost,
   updatePost,
 } from "../../blog.reducer";
@@ -30,9 +30,7 @@ export default function CreatePost() {
   );
 
   useEffect(() => {
-    if (isEditingPost) {
-      setFormData(isEditingPost || initialState);
-    }
+    isEditingPost !== null ? setFormData(isEditingPost) : setFormData(initialState)
   }, [isEditingPost]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -48,7 +46,7 @@ export default function CreatePost() {
 
   const handleCancel = () => {
     setFormData(initialState);
-    dispatch(cacelEditingPost());
+    dispatch(cancelEditingPost());
   };
 
   return (
@@ -154,7 +152,7 @@ export default function CreatePost() {
               setFormData((pre) => {
                 return {
                   ...pre,
-                  checked: event.target.checked,
+                  published: event.target.checked,
                 };
               });
             }}
