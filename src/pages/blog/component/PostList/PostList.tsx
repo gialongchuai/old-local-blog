@@ -1,10 +1,8 @@
-import { useDispatch, useSelector } from "react-redux";
-import PostItem from "../PostItem";
-import { RootState } from "../../../../store";
-import { cacelEditingPost, deletePost, editingPost } from "../../blog.slice";
 import { useEffect } from "react";
-import http from "../../../../utils/http";
-import { error } from "console";
+import { useSelector } from "react-redux";
+import { RootState, useAppDispacth } from "../../../../store";
+import { deletePost, editingPost, getPostList } from "../../blog.slice";
+import PostItem from "../PostItem";
 
 // useEffect xử lý bất đồng bộ
 // gọi api nếu thành công dispatch tới action success ngược lại fail
@@ -15,29 +13,13 @@ import { error } from "console";
 // useReducer trong createSlice chỉ xử lý đồng bộ, rồi
 export default function PostList() {
   const postList = useSelector((state: RootState) => state.blog.postList);
-  const dispatch = useDispatch();
+  const dispatch = useAppDispacth();
 
   useEffect(() => {
-    const controller = new AbortController();
-
-    http
-      .get("/posts", {
-        signal: controller.signal
-      })
-      .then((res) => {
-        const postListResult = res.data;
-        dispatch({ type: "blog/getPostListSuccess", payload: postListResult });
-      })
-      .catch((error) => {
-        if(error.code !== "ERR_CANCELED") {
-          dispatch({ type: "blog/getPostListFailed", payload: error });
-        }
-      });
-
+    const promise = dispatch(getPostList());
     return () => {
-      // unmount : cleanup func
-      controller.abort();
-    };
+      promise.abort();
+    }
   }, []);
 
   const handleDelete = (idPost: string) => {

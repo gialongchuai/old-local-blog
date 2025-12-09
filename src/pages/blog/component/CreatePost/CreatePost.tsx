@@ -1,16 +1,12 @@
 import { FormEvent, useEffect, useState } from "react";
-import PostItem from "../PostItem";
-import PostList from "../PostList";
+import { useSelector } from "react-redux";
+import { RootState, useAppDispacth } from "../../../../store";
 import { Post } from "../../../../types/blog.type";
-import { title } from "process";
-import { useDispatch, useSelector } from "react-redux";
 import {
   addPost,
   cacelEditingPost,
-  editingPost,
-  updatePost,
+  updatePost
 } from "../../blog.slice";
-import { RootState } from "../../../../store";
 
 const initialState: Post = {
   title: "",
@@ -23,7 +19,7 @@ const initialState: Post = {
 
 export default function CreatePost() {
   const [formData, setFormData] = useState<Post>(initialState);
-  const dispatch = useDispatch();
+  const dispatch = useAppDispacth();
 
   const isEditingPost = useSelector(
     (state: RootState) => state.blog.editingPost
@@ -36,8 +32,8 @@ export default function CreatePost() {
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!isEditingPost) {
-      const formDataSetId = { ...formData, id: new Date().toISOString() };
-      dispatch(addPost(formDataSetId));
+      const formDataSetId = formData;
+      dispatch(addPost({...formDataSetId, id: new Date().toISOString()}));
     } else {
       dispatch(updatePost(formData));
     }

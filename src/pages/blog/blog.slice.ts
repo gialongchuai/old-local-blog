@@ -1,11 +1,6 @@
-import {
-  createAction,
-  createReducer,
-  createSlice,
-  PayloadAction,
-} from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { Post } from "../../types/blog.type";
-import { initialPostList } from "../../constants/blog";
+import http from "../../utils/http";
 
 interface BlogState {
   postList: Post[];
@@ -18,24 +13,49 @@ const initialState: BlogState = {
   editingPost: null,
 };
 
+export const getPostList = createAsyncThunk(
+  "blog/getPostList",
+  async (_, thunkAPI) => {
+    // signal giống bên kia là loại bỏ cái abort của React Trict Mode hay gì đó :vv
+    // bên kia nhớ hứng promise rồi abort nha!
+    const response = await http.get<Post[]>("posts", {
+      signal: thunkAPI.signal,
+    });
+    return response.data;
+  }
+);
+
+export const addPost = createAsyncThunk(
+  "blog/addPost",
+  async (body: Post, thunkApi) => {
+    const response = await http.post<Post>("posts", body, {
+      signal: thunkApi.signal,
+    });
+    return response.data;
+  }
+);
+
+export const deletePost = createAsyncThunk(
+  "blog/deletePost",
+  async (idPost: string, thunkAPI) => {
+    const response = await http.delete<Post>(`posts/${idPost}`, {
+      signal: thunkAPI.signal,
+    });
+    return response.data;
+  }
+);
+
+// export const editingPost = createAsyncThunk(
+//   "blog/editingPost",
+//   async (idPost: string, thunkAPI) => {
+//     const response = 
+//   }
+// );
+
 const blogSlice = createSlice({
   name: "blog",
   initialState,
   reducers: {
-    addPost: (state, action: PayloadAction<Post>) => {
-      const post = action.payload;
-      state.postList.push(post);
-    },
-    deletePost: (state, action: PayloadAction<string>) => {
-      const idPost = action.payload;
-      const foundIdPost = state.postList.findIndex(
-        (post) => post.id === idPost
-      );
-      if (foundIdPost !== -1) {
-        state.postList.splice(foundIdPost, 1);
-        state.editingPost = null;
-      }
-    },
     editingPost: (state, action: PayloadAction<string>) => {
       const idPost = action.payload;
       const foundPost =
@@ -58,22 +78,29 @@ const blogSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase('blog/getPostListSuccess', (state, action: any) => {
-      state.postList = action.payload;
-    })
-  }
+    builder
+      .addCase(getPostList.fulfilled, (state, action) => {
+        state.postList = action.payload;
+      })
+      .addCase(addPost.fulfilled, (state, action) => {
+        state.postList.push(action.payload);
+      })
+      .addCase(deletePost.fulfilled, (state, action) => {
+        const idPost = action.payload.id;
+        const foundIdPost = state.postList.findIndex(
+          (post) => post.id === idPost
+        );
+        if (foundIdPost !== -1) {
+          state.postList.splice(foundIdPost, 1);
+        }
+      });
+  },
   // extraReducers : có thể tim hiểu cho addMatcher và defaultmathc gì gì đó.
   // hình như là nó có builder như useReduce nhưng nó không gợi ý action hay sao đó
   // lên doc đọc thêm nha :()
 });
 
-export const {
-  addPost,
-  cacelEditingPost,
-  deletePost,
-  editingPost,
-  updatePost,
-} = blogSlice.actions;
+export const { cacelEditingPost, editingPost, updatePost } = blogSlice.actions;
 
 const blogReducer = blogSlice.reducer;
 export default blogReducer;
