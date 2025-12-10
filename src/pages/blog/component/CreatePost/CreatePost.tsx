@@ -4,7 +4,7 @@ import { RootState, useAppDispacth } from "../../../../store";
 import { Post } from "../../../../types/blog.type";
 import {
   addPost,
-  cacelEditingPost,
+  cancelEditingPost,
   updatePost
 } from "../../blog.slice";
 
@@ -35,6 +35,7 @@ export default function CreatePost() {
       const formDataSetId = formData;
       dispatch(addPost({...formDataSetId, id: new Date().toISOString()}));
     } else {
+      console.log(formData);
       dispatch(updatePost(formData));
     }
     setFormData(initialState);
@@ -42,7 +43,7 @@ export default function CreatePost() {
 
   const handleCancel = () => {
     setFormData(initialState);
-    dispatch(cacelEditingPost());
+    dispatch(cancelEditingPost());
   };
 
   return (

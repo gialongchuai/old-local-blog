@@ -1,16 +1,31 @@
-import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import {
+  AsyncThunk,
+  createAsyncThunk,
+  createSlice,
+  PayloadAction,
+} from "@reduxjs/toolkit";
 import { Post } from "../../types/blog.type";
 import http from "../../utils/http";
+
+type GenericAsyncThunk = AsyncThunk<unknown, unknown, any>;
+
+type PendingAction = ReturnType<GenericAsyncThunk["pending"]>;
+type RejectedAction = ReturnType<GenericAsyncThunk["rejected"]>;
+type FulfilledAction = ReturnType<GenericAsyncThunk["fulfilled"]>;
 
 interface BlogState {
   postList: Post[];
   editingPost: Post | null; // lưu ý rằng 1 xẹt là nhận 1 trong 2 thì ok
   // còn 2 xẹt thì tìm falsely
+  loading: boolean;
+  currentRequestId: undefined | string
 }
 
 const initialState: BlogState = {
   postList: [],
   editingPost: null,
+  loading: false,
+  currentRequestId: undefined,
 };
 
 export const getPostList = createAsyncThunk(
@@ -45,36 +60,33 @@ export const deletePost = createAsyncThunk(
   }
 );
 
-// export const editingPost = createAsyncThunk(
-//   "blog/editingPost",
-//   async (idPost: string, thunkAPI) => {
-//     const response = 
-//   }
-// );
+export const updatePost = createAsyncThunk(
+  "blog/updatePost",
+  async (body: Post, thunkAPI) => {
+    const idPost = body.id;
+    const response = await http.put<Post>(`posts/${idPost}`, body, {
+      signal: thunkAPI.signal,
+    });
+    return response.data;
+  }
+);
+
+export const editingPost = createAsyncThunk(
+  "blog/editingPost",
+  async (idPost: string, thunkAPI) => {
+    const response = await http.get<Post>(`posts/${idPost}`, {
+      signal: thunkAPI.signal,
+    });
+    return response.data;
+  }
+);
 
 const blogSlice = createSlice({
   name: "blog",
   initialState,
   reducers: {
-    editingPost: (state, action: PayloadAction<string>) => {
-      const idPost = action.payload;
-      const foundPost =
-        state.postList.find((post) => post.id === idPost) || null;
-      state.editingPost = foundPost;
-    },
-    cacelEditingPost: (state) => {
+    cancelEditingPost: (state) => {
       state.editingPost = null;
-    },
-    updatePost: (state, action: PayloadAction<Post>) => {
-      const idPost = action.payload.id;
-      state.postList.some((post, index) => {
-        if (post.id === idPost) {
-          state.postList[index] = action.payload;
-          state.editingPost = null;
-          return true;
-        }
-        return false;
-      });
     },
   },
   extraReducers: (builder) => {
@@ -86,67 +98,73 @@ const blogSlice = createSlice({
         state.postList.push(action.payload);
       })
       .addCase(deletePost.fulfilled, (state, action) => {
-        const idPost = action.payload.id;
+        // const idPost = action.payload.id; // trời ơi delete thành công trả {} : 200
+        // vầy là đói vì là undefined
+        // vẫn xóa thành công post nhưng mà không reset state gì cả
+
+        const idPost = action.meta.arg; // lấy id như này thành công nè!!
         const foundIdPost = state.postList.findIndex(
           (post) => post.id === idPost
         );
         if (foundIdPost !== -1) {
           state.postList.splice(foundIdPost, 1);
+          state.editingPost = null; // ví dụ bấm vào edit sao đó
+          // post hiện lên form mà lúc này bấm vào delete -> clear form
         }
-      });
+      })
+      .addCase(editingPost.fulfilled, (state, action) => {
+        const idPost = action.payload.id;
+        const foundPost =
+          state.postList.find((post) => post.id === idPost) || null;
+        state.editingPost = foundPost;
+      })
+      .addCase(updatePost.fulfilled, (state, action) => {
+        const idPost = action.payload.id;
+        state.postList.find((post, index) => {
+          if (post.id === idPost) {
+            state.postList[index] = action.payload;
+            state.editingPost = null; // thêm để khi update xong reload lại form hiện publish post
+            return true;
+          }
+          return false;
+        });
+      })
+      .addMatcher<PendingAction>(
+        (action) => action.type.endsWith("/pending"),
+        (state, action) => {
+          state.loading = true;
+
+          // nghe nói đâu mỗi lần request 1 cái thì action này có id trả về 
+          // không thể nào trung cái này được
+          state.currentRequestId = action.meta.requestId;
+        }
+      )
+      .addMatcher<RejectedAction>(
+        (action) => action.type.endsWith("/rejected"),
+        (state, action) => {
+
+          if(state.loading && state.currentRequestId === action.meta.requestId) {
+            state.loading = false;
+            state.currentRequestId = undefined;
+          }
+        }
+      )
+      .addMatcher<FulfilledAction>(
+        (action) => action.type.endsWith("/fulfilled"),
+        (state, action) => {
+          if(state.loading && state.currentRequestId === action.meta.requestId) {
+            state.loading = false;
+            state.currentRequestId = undefined;
+          }
+        }
+      )
   },
   // extraReducers : có thể tim hiểu cho addMatcher và defaultmathc gì gì đó.
   // hình như là nó có builder như useReduce nhưng nó không gợi ý action hay sao đó
   // lên doc đọc thêm nha :()
 });
 
-export const { cacelEditingPost, editingPost, updatePost } = blogSlice.actions;
+export const { cancelEditingPost } = blogSlice.actions;
 
 const blogReducer = blogSlice.reducer;
 export default blogReducer;
-
-// export const addPost = createAction<Post>("blog/addPost");
-// export const deletePost = createAction<string>("blog/deletePost");
-// export const editingPost = createAction<string>("blog/editingPost");
-// export const cacelEditingPost = createAction("blog/cacelEditingPost");
-// export const updatePost = createAction<Post>("blog/updatePost");
-
-// const blogReducer = createReducer(initialState, (builder) => {
-//   // Immutable an toàn nhờ Immer. Hình như là không ...pre nó vẫn hiểu
-//   builder
-//     .addCase(addPost, (state, action) => {
-//       const post = action.payload;
-//       state.postList.push(post);
-//     })
-//     .addCase(deletePost, (state, action) => {
-//       const idPost = action.payload;
-//       const foundIdPost = state.postList.findIndex(
-//         (post) => post.id === idPost
-//       );
-//       if (foundIdPost !== -1) {
-//         // ảo thật để if(foud..) là bị lỗi không xóa được item số 1
-//         state.postList.splice(foundIdPost, 1);
-//       }
-//     })
-//     .addCase(editingPost, (state, action) => {
-//       const idPost = action.payload;
-//       const foundPost =
-//         state.postList.find((post) => post.id === idPost) || null;
-//       state.editingPost = foundPost;
-//     })
-//     .addCase(cacelEditingPost, (state) => {
-//       state.editingPost = null;
-//     })
-//     .addCase(updatePost, (state, action) => {
-//         const idPost = action.payload.id;
-//         state.postList.some((post, index) => {
-//             if(post.id === idPost) {
-//                 state.postList[index] = action.payload;
-//                 return true;
-//             }
-//             return false;
-//         })
-//     })
-// });
-
-// export default blogReducer;

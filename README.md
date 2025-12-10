@@ -9,7 +9,7 @@ yarn add -D tailwindcss@3.1.8 postcss@8.4.18 autoprefixer@10.4.12
 yarn tailwindcss init -p
 
 yarn add axios
-yarn add -D json-server
+yarn add -D json-server@0.17 -> để có delay nha
 
 => start
 npm start

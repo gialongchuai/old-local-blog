@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import { RootState, useAppDispacth } from "../../../../store";
 import { deletePost, editingPost, getPostList } from "../../blog.slice";
 import PostItem from "../PostItem";
+import Skeleton from "../Skeleton";
 
 // useEffect xử lý bất đồng bộ
 // gọi api nếu thành công dispatch tới action success ngược lại fail
@@ -13,13 +14,14 @@ import PostItem from "../PostItem";
 // useReducer trong createSlice chỉ xử lý đồng bộ, rồi
 export default function PostList() {
   const postList = useSelector((state: RootState) => state.blog.postList);
+  const loading = useSelector((state: RootState) => state.blog.loading);
   const dispatch = useAppDispacth();
 
   useEffect(() => {
     const promise = dispatch(getPostList());
     return () => {
       promise.abort();
-    }
+    };
   }, []);
 
   const handleDelete = (idPost: string) => {
@@ -44,14 +46,21 @@ export default function PostList() {
               </p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-2 xl:grid-cols-2 xl:gap-8">
-              {postList.map((post) => (
-                <PostItem
-                  post={post}
-                  key={post.id}
-                  handleDelete={handleDelete}
-                  handleEdit={handleEdit}
-                />
-              ))}
+              {loading && (
+                <>
+                  <Skeleton />
+                  <Skeleton />
+                </>
+              )}
+              {!loading &&
+                postList.map((post) => (
+                  <PostItem
+                    post={post}
+                    key={post.id}
+                    handleDelete={handleDelete}
+                    handleEdit={handleEdit}
+                  />
+                ))}
             </div>
           </div>
         </div>
