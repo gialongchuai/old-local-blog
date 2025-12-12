@@ -2,11 +2,9 @@ import { FormEvent, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState, useAppDispacth } from "../../../../store";
 import { Post } from "../../../../types/blog.type";
-import {
-  addPost,
-  cancelEditingPost,
-  updatePost
-} from "../../blog.slice";
+import { addPost, cancelEditingPost, updatePost } from "../../blog.slice";
+import { error } from "console";
+import { unwrapResult } from "@reduxjs/toolkit";
 
 const initialState: Post = {
   title: "",
@@ -17,8 +15,13 @@ const initialState: Post = {
   published: false,
 };
 
+interface ErrorForm {
+  publishDate: string;
+}
+
 export default function CreatePost() {
   const [formData, setFormData] = useState<Post>(initialState);
+  const [errorForm, setErorrForm] = useState<null | ErrorForm>();
   const dispatch = useAppDispacth();
 
   const isEditingPost = useSelector(
@@ -26,19 +29,39 @@ export default function CreatePost() {
   );
 
   useEffect(() => {
-    isEditingPost !== null ? setFormData(isEditingPost) : setFormData(initialState)
+    isEditingPost !== null
+      ? setFormData(isEditingPost)
+      : setFormData(initialState);
   }, [isEditingPost]);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!isEditingPost) {
-      const formDataSetId = formData;
-      dispatch(addPost({...formDataSetId, id: new Date().toISOString()}));
+      try {
+        const formDataSetId = formData;
+        const res = await dispatch( // async await
+          addPost({ ...formDataSetId, id: new Date().toISOString() })
+        );
+        unwrapResult(res);
+        // setFormData(initialState);
+      } catch(error: any) {
+        setErorrForm(error.error);
+      }
     } else {
       console.log(formData);
-      dispatch(updatePost(formData));
+      dispatch(updatePost(formData)) // cách 01: promsie
+        .unwrap() // khi update post fix time trong quá khứ
+        .then(() => {
+          // nhờ json server catch lỗi quăng cho ông createThunkApi,
+          setFormData(initialState); //  ông này quăng lại qua đây và set lỗi!!!
+          if (errorForm) {
+            setErorrForm(null);
+          }
+        })
+        .catch((error) => {
+          setErorrForm(error.error);
+        });
     }
-    setFormData(initialState);
   };
 
   const handleCancel = () => {
@@ -120,14 +143,22 @@ export default function CreatePost() {
         <div className="mb-6">
           <label
             htmlFor="publishDate"
-            className="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-300"
+            className={`mb-2 block text-sm font-medium ${
+              errorForm?.publishDate
+                ? "text-red-500"
+                : "text-gray-900 dark:text-gray-300"
+            }`}
           >
             Publish Date
           </label>
           <input
             type="datetime-local"
             id="publishDate"
-            className="block w-56 rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className={`block w-56 rounded-lg border p-2.5 text-sm ${
+              errorForm?.publishDate
+                ? "border-red-500 bg-gray-50 text-red-500 focus:border-red-500 focus:ring-red-500 "
+                : "border-gray-300 bg-gray-50  text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            }`}
             placeholder="Title"
             required
             value={formData.publishDate}
@@ -138,6 +169,15 @@ export default function CreatePost() {
               }));
             }}
           />
+          {errorForm?.publishDate && (
+            <>
+              <p className="mt-2 text-red-500">
+                <span className="font-medium">
+                  Lỗi: {errorForm.publishDate}
+                </span>
+              </p>
+            </>
+          )}
         </div>
         <div className="mb-6 flex items-center">
           <input

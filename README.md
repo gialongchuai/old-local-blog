@@ -13,5 +13,8 @@ yarn add -D json-server@0.17 -> để có delay nha
 
 => start
 npm start
-npm run server 
+npm run server
+
+extension
+Tailwind CSS IntelliSense
 ```

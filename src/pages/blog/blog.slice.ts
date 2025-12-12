@@ -18,14 +18,14 @@ interface BlogState {
   editingPost: Post | null; // lưu ý rằng 1 xẹt là nhận 1 trong 2 thì ok
   // còn 2 xẹt thì tìm falsely
   loading: boolean;
-  currentRequestId: undefined | string
+  currentRequestId: undefined | string;
 }
 
 const initialState: BlogState = {
-  postList: [],
-  editingPost: null,
-  loading: false,
-  currentRequestId: undefined,
+  postList: [], // hiển thị danh sách các bài post lên màn hình
+  editingPost: null, // kiểm tra nếu đang bấm vào edit 1 item bất kì thì hiển thị post đó lên form
+  loading: false, // kiểm tra trạng thái khi gọi api để hiển thị Skeleton
+  currentRequestId: undefined, // cái này kiểm tra việc click nhiều lần nếu người dùng gọi api cho 3 trạng thái với createThunkApi
 };
 
 export const getPostList = createAsyncThunk(
@@ -43,10 +43,17 @@ export const getPostList = createAsyncThunk(
 export const addPost = createAsyncThunk(
   "blog/addPost",
   async (body: Post, thunkApi) => {
-    const response = await http.post<Post>("posts", body, {
-      signal: thunkApi.signal,
-    });
-    return response.data;
+    try {
+      const response = await http.post<Post>("posts", body, {
+        signal: thunkApi.signal,
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.code === "ERR_BAD_REQUEST" && error.name === "AxiosError") {
+        return thunkApi.rejectWithValue(error.response.data);
+      }
+      throw error;
+    }
   }
 );
 
@@ -63,11 +70,18 @@ export const deletePost = createAsyncThunk(
 export const updatePost = createAsyncThunk(
   "blog/updatePost",
   async (body: Post, thunkAPI) => {
-    const idPost = body.id;
-    const response = await http.put<Post>(`posts/${idPost}`, body, {
-      signal: thunkAPI.signal,
-    });
-    return response.data;
+    try {
+      const idPost = body.id;
+      const response = await http.put<Post>(`posts/${idPost}`, body, {
+        signal: thunkAPI.signal,
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.code === "ERR_BAD_REQUEST" && error.name === "AxiosError") {
+        return thunkAPI.rejectWithValue(error.response.data);
+      }
+      throw error;
+    }
   }
 );
 
@@ -134,7 +148,7 @@ const blogSlice = createSlice({
         (state, action) => {
           state.loading = true;
 
-          // nghe nói đâu mỗi lần request 1 cái thì action này có id trả về 
+          // nghe nói đâu mỗi lần request 1 cái thì action này có id trả về
           // không thể nào trung cái này được
           state.currentRequestId = action.meta.requestId;
         }
@@ -142,8 +156,10 @@ const blogSlice = createSlice({
       .addMatcher<RejectedAction>(
         (action) => action.type.endsWith("/rejected"),
         (state, action) => {
-
-          if(state.loading && state.currentRequestId === action.meta.requestId) {
+          if (
+            state.loading &&
+            state.currentRequestId === action.meta.requestId
+          ) {
             state.loading = false;
             state.currentRequestId = undefined;
           }
@@ -152,12 +168,15 @@ const blogSlice = createSlice({
       .addMatcher<FulfilledAction>(
         (action) => action.type.endsWith("/fulfilled"),
         (state, action) => {
-          if(state.loading && state.currentRequestId === action.meta.requestId) {
+          if (
+            state.loading &&
+            state.currentRequestId === action.meta.requestId
+          ) {
             state.loading = false;
             state.currentRequestId = undefined;
           }
         }
-      )
+      );
   },
   // extraReducers : có thể tim hiểu cho addMatcher và defaultmathc gì gì đó.
   // hình như là nó có builder như useReduce nhưng nó không gợi ý action hay sao đó
