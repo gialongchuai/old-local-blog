@@ -20,9 +20,9 @@ interface ErrorForm {
 }
 
 export default function CreatePost() {
-  const [formData, setFormData] = useState<Post>(initialState);
-  const [errorForm, setErorrForm] = useState<null | ErrorForm>();
-  const dispatch = useAppDispacth();
+  const [formData, setFormData] = useState<Post>(initialState); // formData nhập các trường để tạo thêm sửa, mặc định là rỗng init á.
+  const [errorForm, setErorrForm] = useState<null | ErrorForm>(); // do bên json-server middleware đang set error là object 
+  const dispatch = useAppDispacth(); // và chứa publish string xem có hợp lệ hay không
 
   const isEditingPost = useSelector(
     (state: RootState) => state.blog.editingPost
@@ -39,12 +39,16 @@ export default function CreatePost() {
     if (!isEditingPost) {
       try {
         const formDataSetId = formData;
-        const res = await dispatch( // async await
+        const res = await dispatch(
+          // async await
           addPost({ ...formDataSetId, id: new Date().toISOString() })
         );
         unwrapResult(res);
-        // setFormData(initialState);
-      } catch(error: any) {
+        setFormData(initialState);
+        if (errorForm) {
+          setErorrForm(null);
+        }
+      } catch (error: any) {
         setErorrForm(error.error);
       }
     } else {
