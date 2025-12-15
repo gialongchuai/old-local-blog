@@ -1,6 +1,10 @@
+import { useGetPotsQuery } from "../../blog.service";
 import PostItem from "../PostItem";
+import Skeleton from "../Skeleton";
 
 export default function PostList() {
+  const { data, isLoading, isFetching } = useGetPotsQuery();
+  console.log(data);
   return (
     <>
       <div>
@@ -16,7 +20,13 @@ export default function PostList() {
               </p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-2 xl:grid-cols-2 xl:gap-8">
-              <PostItem />
+              {isFetching && (<>
+                <Skeleton />
+                <Skeleton />
+              </>)}
+              {!isFetching && data?.map((post) => (
+                <PostItem key={post.id} post={post} />
+              ))}
             </div>
           </div>
         </div>
