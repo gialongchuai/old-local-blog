@@ -1,10 +1,30 @@
+import { FormEvent, useState } from "react";
 import PostItem from "../PostItem";
 import PostList from "../PostList";
+import { Post } from "../../types/blog.type";
+import { useAddPostMutation } from "../../blog.service";
+
+const inititalState: Omit<Post, "id"> = {
+  description: "",
+  featureImage: "",
+  published: false,
+  publishDate: "",
+  title: "",
+};
 
 export default function CreatePost() {
+  const [formData, setFormData] = useState<Omit<Post, "id">>(inititalState);
+  const [addPost, addPostResult] = useAddPostMutation();
+
+  const handleSumbit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    addPost(formData).unwrap();
+    setFormData(inititalState);
+  };
+
   return (
     <>
-      <form>
+      <form onSubmit={handleSumbit}>
         <div className="mb-6">
           <label
             htmlFor="title"
@@ -18,6 +38,13 @@ export default function CreatePost() {
             className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
             placeholder="Title"
             required
+            value={formData.title}
+            onChange={(event) => {
+              setFormData((pre) => ({
+                ...pre,
+                title: event.target.value,
+              }));
+            }}
           />
         </div>
         <div className="mb-6">
@@ -33,6 +60,13 @@ export default function CreatePost() {
             className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
             placeholder="Url image"
             required
+            value={formData.featureImage}
+            onChange={(event) => {
+              setFormData((pre) => ({
+                ...pre,
+                featureImage: event.target.value,
+              }));
+            }}
           />
         </div>
         <div className="mb-6">
@@ -49,6 +83,13 @@ export default function CreatePost() {
               className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
               placeholder="Your description..."
               required
+              value={formData.description}
+              onChange={(event) => {
+                setFormData((pre) => ({
+                  ...pre,
+                  description: event.target.value,
+                }));
+              }}
             />
           </div>
         </div>
@@ -63,8 +104,14 @@ export default function CreatePost() {
             type="datetime-local"
             id="publishDate"
             className="block w-56 rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-            placeholder="Title"
             required
+            value={formData.publishDate}
+            onChange={(event) => {
+              setFormData((pre) => ({
+                ...pre,
+                publishDate: event.target.value,
+              }));
+            }}
           />
         </div>
         <div className="mb-6 flex items-center">
@@ -72,6 +119,13 @@ export default function CreatePost() {
             id="publish"
             type="checkbox"
             className="h-4 w-4 focus:ring-2 focus:ring-blue-500"
+            checked={formData.published}
+            onChange={(event) => {
+              setFormData((pre) => ({
+                ...pre,
+                published: event.target.checked,
+              }));
+            }}
           />
           <label
             htmlFor="publish"

@@ -4,7 +4,6 @@ import Skeleton from "../Skeleton";
 
 export default function PostList() {
   const { data, isLoading, isFetching } = useGetPotsQuery();
-  console.log(data);
   return (
     <>
       <div>
