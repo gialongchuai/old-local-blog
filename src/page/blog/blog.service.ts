@@ -11,7 +11,7 @@ export const blogApi = createApi({
   tagTypes: ["Posts"],
   endpoints: (build) => ({
     // generic trả về ds post, void không truyền tham số
-    getPots: build.query<Post[], void>({
+    getPosts: build.query<Post[], void>({
       query: () => "posts", // câu query thêm posts cuối : http.../posts
       // method () không tham số do get mà
 
@@ -32,8 +32,20 @@ export const blogApi = createApi({
       }),
       invalidatesTags: [{ type: "Posts", id: "LIST" }],
     }),
+    getPost: build.query<Post, string>({
+      query: (id) => `posts/${id}`,
+    }),
+    updatePost: build.mutation<Post, {id: string, body: Post}>({
+      query: (data) => ({
+        url: `posts/${data.id}`,
+        method: 'PUT',
+        body: data.body
+      }),
+      invalidatesTags: (res, error, data) => [{ type: "Posts", id: data.id }],
+    })
   }),
 });
 
 // tự động gợi ý useGetPotsQuery theo trong object
-export const { useGetPotsQuery, useAddPostMutation } = blogApi;
+export const { useGetPostQuery, useGetPostsQuery, useAddPostMutation, useUpdatePostMutation } =
+  blogApi;

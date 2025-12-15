@@ -22,7 +22,7 @@ server.use((req, res, next) => {
   // Continue to JSON Server router
   setTimeout(() => {
     next()
-  }, 500)
+  }, 2000)
 })
 
 // Use default router

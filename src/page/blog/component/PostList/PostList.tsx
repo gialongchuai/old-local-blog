@@ -1,9 +1,18 @@
-import { useGetPotsQuery } from "../../blog.service";
+import { useDispatch, useSelector } from "react-redux";
+import { useGetPostQuery, useGetPostsQuery } from "../../blog.service";
 import PostItem from "../PostItem";
 import Skeleton from "../Skeleton";
+import { startEditingPost } from "../../blog.slice";
+import { RootState } from "../../../../store";
+import { useEffect } from "react";
 
 export default function PostList() {
-  const { data, isLoading, isFetching } = useGetPotsQuery();
+  const { data, isLoading, isFetching } = useGetPostsQuery();
+  const dispatch = useDispatch();
+
+  const handleEditPost = (id: string) => {
+    dispatch(startEditingPost(id));
+  };
   return (
     <>
       <div>
@@ -19,13 +28,20 @@ export default function PostList() {
               </p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-2 xl:grid-cols-2 xl:gap-8">
-              {isFetching && (<>
-                <Skeleton />
-                <Skeleton />
-              </>)}
-              {!isFetching && data?.map((post) => (
-                <PostItem key={post.id} post={post} />
-              ))}
+              {isFetching && (
+                <>
+                  <Skeleton />
+                  <Skeleton />
+                </>
+              )}
+              {!isFetching &&
+                data?.map((post) => (
+                  <PostItem
+                    key={post.id}
+                    post={post}
+                    handleEditPost={handleEditPost}
+                  />
+                ))}
             </div>
           </div>
         </div>

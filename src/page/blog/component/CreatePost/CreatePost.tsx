@@ -1,8 +1,10 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import PostItem from "../PostItem";
 import PostList from "../PostList";
 import { Post } from "../../types/blog.type";
-import { useAddPostMutation } from "../../blog.service";
+import { useAddPostMutation, useGetPostQuery, useUpdatePostMutation } from "../../blog.service";
+import { useSelector } from "react-redux";
+import { RootState } from "../../../../store";
 
 const inititalState: Omit<Post, "id"> = {
   description: "",
@@ -13,12 +15,33 @@ const inititalState: Omit<Post, "id"> = {
 };
 
 export default function CreatePost() {
-  const [formData, setFormData] = useState<Omit<Post, "id">>(inititalState);
+  const [formData, setFormData] = useState<Omit<Post, "id"> | Post>(inititalState);
   const [addPost, addPostResult] = useAddPostMutation();
+
+  const isStartingPost = useSelector((state: RootState) => state.blog.postId);
+  const { data, isLoading, isFetching } = useGetPostQuery(isStartingPost, {
+    skip: !isStartingPost,
+  });
+
+  const [updatePost, updatePostResult] = useUpdatePostMutation();
+  
+
+  useEffect(() => {
+    if (data) {
+      setFormData(data);
+    }
+  }, [data]); // nhớ có thêm [data] để nhập text thay đổi thì rerender data thay đổi vào form
 
   const handleSumbit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    addPost(formData).unwrap();
+    if(isStartingPost) {
+      await updatePost({
+        id: isStartingPost,
+        body: formData as Post
+      }).unwrap();
+    } else {
+      await addPost(formData).unwrap();
+    }
     setFormData(inititalState);
   };
 
@@ -135,30 +158,38 @@ export default function CreatePost() {
           </label>
         </div>
         <div>
-          <button
-            className="group relative mr-2 inline-flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 p-0.5 text-sm font-medium text-gray-900 hover:text-white focus:outline-none focus:ring-4 focus:ring-blue-300 group-hover:from-purple-600 group-hover:to-blue-500 dark:text-white dark:focus:ring-blue-800"
-            type="submit"
-          >
-            <span className="relative rounded-md bg-white px-5 py-2.5 transition-all duration-75 ease-in group-hover:bg-opacity-0 dark:bg-gray-900">
-              Publish Post
-            </span>
-          </button>
-          <button
-            type="submit"
-            className="group relative mb-2 mr-2 inline-flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-teal-300 to-lime-300 p-0.5 text-sm font-medium text-gray-900 focus:outline-none focus:ring-4 focus:ring-lime-200 group-hover:from-teal-300 group-hover:to-lime-300 dark:text-white dark:hover:text-gray-900 dark:focus:ring-lime-800"
-          >
-            <span className="relative rounded-md bg-white px-5 py-2.5 transition-all duration-75 ease-in group-hover:bg-opacity-0 dark:bg-gray-900">
-              Update Post
-            </span>
-          </button>
-          <button
-            type="reset"
-            className="group relative mb-2 mr-2 inline-flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 p-0.5 text-sm font-medium text-gray-900 focus:outline-none focus:ring-4 focus:ring-red-100 group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:text-white dark:hover:text-gray-900 dark:focus:ring-red-400"
-          >
-            <span className="relative rounded-md bg-white px-5 py-2.5 transition-all duration-75 ease-in group-hover:bg-opacity-0 dark:bg-gray-900">
-              Cancel
-            </span>
-          </button>
+          {!isStartingPost && (
+            <>
+              <button
+                className="group relative mr-2 inline-flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 p-0.5 text-sm font-medium text-gray-900 hover:text-white focus:outline-none focus:ring-4 focus:ring-blue-300 group-hover:from-purple-600 group-hover:to-blue-500 dark:text-white dark:focus:ring-blue-800"
+                type="submit"
+              >
+                <span className="relative rounded-md bg-white px-5 py-2.5 transition-all duration-75 ease-in group-hover:bg-opacity-0 dark:bg-gray-900">
+                  Publish Post
+                </span>
+              </button>
+            </>
+          )}
+          {isStartingPost && (
+            <>
+              <button
+                type="submit"
+                className="group relative mb-2 mr-2 inline-flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-teal-300 to-lime-300 p-0.5 text-sm font-medium text-gray-900 focus:outline-none focus:ring-4 focus:ring-lime-200 group-hover:from-teal-300 group-hover:to-lime-300 dark:text-white dark:hover:text-gray-900 dark:focus:ring-lime-800"
+              >
+                <span className="relative rounded-md bg-white px-5 py-2.5 transition-all duration-75 ease-in group-hover:bg-opacity-0 dark:bg-gray-900">
+                  Update Post
+                </span>
+              </button>
+              <button
+                type="reset"
+                className="group relative mb-2 mr-2 inline-flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 p-0.5 text-sm font-medium text-gray-900 focus:outline-none focus:ring-4 focus:ring-red-100 group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:text-white dark:hover:text-gray-900 dark:focus:ring-red-400"
+              >
+                <span className="relative rounded-md bg-white px-5 py-2.5 transition-all duration-75 ease-in group-hover:bg-opacity-0 dark:bg-gray-900">
+                  Cancel
+                </span>
+              </button>
+            </>
+          )}
         </div>
       </form>
     </>
