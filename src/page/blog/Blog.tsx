@@ -1,5 +1,5 @@
-import CreatePost from "./CreatePost";
-import PostList from "./PostList";
+import CreatePost from "./component/CreatePost";
+import PostList from "./component/PostList";
 
 export default function Blog() {
   return (
