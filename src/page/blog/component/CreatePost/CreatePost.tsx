@@ -1,10 +1,15 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import PostItem from "../PostItem";
 import PostList from "../PostList";
 import { Post } from "../../types/blog.type";
-import { useAddPostMutation, useGetPostQuery, useUpdatePostMutation } from "../../blog.service";
+import {
+  useAddPostMutation,
+  useGetPostQuery,
+  useUpdatePostMutation,
+} from "../../blog.service";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../../store";
+import { isEntityError, isErrorWithMessage, isFetchBaseQueryError } from "../../../../utils/helpers";
 
 const inititalState: Omit<Post, "id"> = {
   description: "",
@@ -14,8 +19,16 @@ const inititalState: Omit<Post, "id"> = {
   title: "",
 };
 
+type FormError =
+  | {
+      [key in keyof typeof inititalState]: string;
+    }
+  | null;
+
 export default function CreatePost() {
-  const [formData, setFormData] = useState<Omit<Post, "id"> | Post>(inititalState);
+  const [formData, setFormData] = useState<Omit<Post, "id"> | Post>(
+    inititalState
+  );
   const [addPost, addPostResult] = useAddPostMutation();
 
   const isStartingPost = useSelector((state: RootState) => state.blog.postId);
@@ -24,7 +37,33 @@ export default function CreatePost() {
   });
 
   const [updatePost, updatePostResult] = useUpdatePostMutation();
-  
+
+  // === Lỗi từ thằng rtk query
+  // với thằng rtk query thì trả về 3 kiểu lỗi serial | fetchbase query | undefinded
+  // tạo formError có cấu trúc giống như init để hứng dữ liệu trả dìa
+  // ví dụ bên service trong build mà trong query => throw error thì sẽ nhảy vào Serialize, còn nếu fetch api bị lỗi nhảy vào fetchbasequery
+
+  // === Lỗi từ server
+  // hiện tại config cho error khi put post thì có dạng error => publishdate
+  // thứ 2 nếu kiểu khác thì chỉ có message string => toast message hiển thị.
+  const errorForm: FormError = useMemo(() => {
+    const errorResult = isStartingPost
+      ? updatePostResult.error
+      : addPostResult.error;
+
+      // lên docs đọc bên util
+      if(isEntityError(errorResult)) { // bên ông helper utils có hanlde cái error này nên rơ chuột vô là biết ông này thuộc loại fetchBaseQueryError 
+        console.log('isEntityError', errorResult); // 
+        return errorResult.data.error as FormError
+      }
+      // if(isErrorWithMessage(errorResult)) {
+      //   console.log('isErrorWithMessage', errorResult);
+      // }
+
+      // return null chỉ muốn xử lý với message thôi còn các kiểu khác thì toast middle ware khác khó hiểu.
+      // Có gì test notel lại khúc này
+      return null;
+  }, [isStartingPost, updatePostResult, addPostResult]);
 
   useEffect(() => {
     if (data) {
@@ -34,10 +73,10 @@ export default function CreatePost() {
 
   const handleSumbit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if(isStartingPost) {
+    if (isStartingPost) {
       await updatePost({
         id: isStartingPost,
-        body: formData as Post
+        body: formData as Post,
       }).unwrap();
     } else {
       await addPost(formData).unwrap();

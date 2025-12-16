@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from "react-redux";
-import { useGetPostQuery, useGetPostsQuery } from "../../blog.service";
+import { useDeletePostMutation, useGetPostQuery, useGetPostsQuery } from "../../blog.service";
 import PostItem from "../PostItem";
 import Skeleton from "../Skeleton";
 import { startEditingPost } from "../../blog.slice";
@@ -9,10 +9,15 @@ import { useEffect } from "react";
 export default function PostList() {
   const { data, isLoading, isFetching } = useGetPostsQuery();
   const dispatch = useDispatch();
+  const [deletePost, deletePostResult] = useDeletePostMutation()
 
   const handleEditPost = (id: string) => {
     dispatch(startEditingPost(id));
   };
+
+  const handleDeletePost = (id: string) => {
+    deletePost(id);
+  }
   return (
     <>
       <div>
@@ -40,6 +45,7 @@ export default function PostList() {
                     key={post.id}
                     post={post}
                     handleEditPost={handleEditPost}
+                    handleDeletePost={handleDeletePost}
                   />
                 ))}
             </div>

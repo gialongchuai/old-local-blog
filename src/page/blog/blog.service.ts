@@ -35,17 +35,27 @@ export const blogApi = createApi({
     getPost: build.query<Post, string>({
       query: (id) => `posts/${id}`,
     }),
-    updatePost: build.mutation<Post, {id: string, body: Post}>({
-      query: (data) => ({
-        url: `posts/${data.id}`,
-        method: 'PUT',
-        body: data.body
-      }),
+    updatePost: build.mutation<Post, { id: string; body: Post }>({
+      query: (data) => {
+        throw Error('Xin chao')
+      },
       invalidatesTags: (res, error, data) => [{ type: "Posts", id: data.id }],
-    })
+    }),
+    deletePost: build.mutation<{}, string>({
+      query: (id) => ({
+        url: `posts/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (res, error, id) => [{ type: "Posts", id: id }]
+    }),
   }),
 });
 
 // tự động gợi ý useGetPotsQuery theo trong object
-export const { useGetPostQuery, useGetPostsQuery, useAddPostMutation, useUpdatePostMutation } =
-  blogApi;
+export const {
+  useGetPostQuery,
+  useGetPostsQuery,
+  useAddPostMutation,
+  useUpdatePostMutation,
+  useDeletePostMutation
+} = blogApi;
