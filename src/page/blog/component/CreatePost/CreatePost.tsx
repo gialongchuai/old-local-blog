@@ -9,7 +9,10 @@ import {
 } from "../../blog.service";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../../store";
-import { isEntityError, isErrorWithMessage, isFetchBaseQueryError } from "../../../../utils/helpers";
+import {
+  isEntityError,
+  isFetchBaseQueryError,
+} from "../../../../utils/helpers";
 
 const inititalState: Omit<Post, "id"> = {
   description: "",
@@ -44,25 +47,27 @@ export default function CreatePost() {
   // ví dụ bên service trong build mà trong query => throw error thì sẽ nhảy vào Serialize, còn nếu fetch api bị lỗi nhảy vào fetchbasequery
 
   // === Lỗi từ server
-  // hiện tại config cho error khi put post thì có dạng error => publishdate
-  // thứ 2 nếu kiểu khác thì chỉ có message string => toast message hiển thị.
+  // Nếu lỗi từ json server thì hiển thị form thông báo lỗi
+  // nếu lỗi từ code logic throw errro thì toast message
   const errorForm: FormError = useMemo(() => {
     const errorResult = isStartingPost
       ? updatePostResult.error
       : addPostResult.error;
 
-      // lên docs đọc bên util
-      if(isEntityError(errorResult)) { // bên ông helper utils có hanlde cái error này nên rơ chuột vô là biết ông này thuộc loại fetchBaseQueryError 
-        console.log('isEntityError', errorResult); // 
-        return errorResult.data.error as FormError
-      }
-      // if(isErrorWithMessage(errorResult)) {
-      //   console.log('isErrorWithMessage', errorResult);
-      // }
+    // thuộc loại entityerror tức là isFetch đó nên publishdate < now thì có thể setForm lỗi
+    if (isEntityError(errorResult)) {
+      // không bắt lỗi code logic
+      // console.log("isEntityError", errorResult);
+      // console.log(errorResult.data.error);
+      return errorResult.data.error as FormError;
+    }
+    // if(isErrorWithMessage(errorResult)) {
+    //   console.log('isErrorWithMessage', errorResult);
+    // }
 
-      // return null chỉ muốn xử lý với message thôi còn các kiểu khác thì toast middle ware khác khó hiểu.
-      // Có gì test notel lại khúc này
-      return null;
+    // return null chỉ muốn xử lý với message thôi còn các kiểu khác thì toast middle ware khác khó hiểu.
+    // Có gì test notel lại khúc này
+    return null;
   }, [isStartingPost, updatePostResult, addPostResult]);
 
   useEffect(() => {
@@ -73,15 +78,19 @@ export default function CreatePost() {
 
   const handleSumbit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (isStartingPost) {
-      await updatePost({
-        id: isStartingPost,
-        body: formData as Post,
-      }).unwrap();
-    } else {
-      await addPost(formData).unwrap();
+    try {
+      if (isStartingPost) {
+        await updatePost({
+          id: isStartingPost,
+          body: formData as Post,
+        }).unwrap(); // nhớ dùng unwrap để có thể nhảy vào catch lỗi nha
+      } else {
+        await addPost(formData).unwrap();
+      }
+      setFormData(inititalState);
+    } catch (error) {
+      // console.log(error);
     }
-    setFormData(inititalState);
   };
 
   return (
@@ -158,14 +167,22 @@ export default function CreatePost() {
         <div className="mb-6">
           <label
             htmlFor="publishDate"
-            className="mb-2 block text-sm font-medium text-gray-900 dark:text-gray-300"
+            className={`mb-2 block text-sm font-medium ${
+              errorForm?.publishDate
+                ? "text-red-500 dark:text-red-500"
+                : "text-gray-900 dark:text-gray-300"
+            }`}
           >
             Publish Date
           </label>
           <input
             type="datetime-local"
             id="publishDate"
-            className="block w-56 rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className={`block w-56 rounded-lg border p-2.5 text-sm ${
+              errorForm?.publishDate
+                ? "border-red-500 bg-gray-50 text-red-500 focus:border-red-500 focus:ring-red-500 "
+                : "border-gray-300 bg-gray-50  text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            }`}
             required
             value={formData.publishDate}
             onChange={(event) => {
@@ -175,6 +192,15 @@ export default function CreatePost() {
               }));
             }}
           />
+          {errorForm?.publishDate && (
+            <>
+              <p className="mt-2 text-red-500">
+                <span className="font-medium">
+                  Lỗi: {errorForm.publishDate}
+                </span>
+              </p>
+            </>
+          )}
         </div>
         <div className="mb-6 flex items-center">
           <input

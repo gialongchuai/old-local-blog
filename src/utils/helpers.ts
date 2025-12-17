@@ -16,7 +16,7 @@ interface EntityError {
 // lên docs đọc nha log 
 // https://redux-toolkit.js.org/rtk-query/usage-with-typescript
 
-//handle ví dụ pulishDate nhỏ hơn time hiện tại
+// handle trong json ví dụ put post lên mà ngày nhỏ hơn handle trong json server
 export function isFetchBaseQueryError(error: unknown): error is FetchBaseQueryError {
     return typeof error === 'object' && error != null && 'status' in error
 }
@@ -32,7 +32,7 @@ export function isErrorWithMessage(error: unknown): error is {message: string} {
     )
 }
 
-// thu hẹp một error có kiểu không xác định về lỗi post put không đúng field
+// thu hẹp một error có kiểu không xác định về lỗi post put không đúng field json server
 export function isEntityError(error: unknown): error is EntityError {
     return (
         isFetchBaseQueryError(error) &&

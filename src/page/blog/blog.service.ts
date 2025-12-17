@@ -36,9 +36,11 @@ export const blogApi = createApi({
       query: (id) => `posts/${id}`,
     }),
     updatePost: build.mutation<Post, { id: string; body: Post }>({
-      query: (data) => {
-        throw Error('Xin chao')
-      },
+      query: (data) => ({
+        url: `posts/${data.id}`,
+        method: 'PUT',
+        body: data.body
+      }),
       invalidatesTags: (res, error, data) => [{ type: "Posts", id: data.id }],
     }),
     deletePost: build.mutation<{}, string>({

@@ -1,6 +1,7 @@
 const jsonServer = require("json-server");
 const server = jsonServer.create();
 const path = require("path");
+const { send } = require("process");
 const router = jsonServer.router(path.join(__dirname, "../db/db.json"));
 const middlewares = jsonServer.defaults();
 
@@ -20,9 +21,14 @@ server.use((req, res, next) => {
     if (new Date(req.body.publishDate).getTime() < new Date().getTime()) {
       return res.status(422).send({
         error: {
-          publishDate: "Khong duoc pushlish vao thoi diem trong qua khu!",
+          publishDate: "Khong duoc publish vao thoi diem trong qua khu!",
         },
       });
+    }
+    if(req.body.title === 'admin') {
+      return res.status(500),send({
+        error: 'Loi admin roi!'
+      })
     }
   }
   // Continue to JSON Server router
