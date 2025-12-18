@@ -2,7 +2,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useDeletePostMutation, useGetPostQuery, useGetPostsQuery } from "../../blog.service";
 import PostItem from "../PostItem";
 import Skeleton from "../Skeleton";
-import { startEditingPost } from "../../blog.slice";
+import { resetEditingPost, startEditingPost } from "../../blog.slice";
 import { RootState } from "../../../../store";
 import { useEffect } from "react";
 
@@ -15,8 +15,13 @@ export default function PostList() {
     dispatch(startEditingPost(id));
   };
 
-  const handleDeletePost = (id: string) => {
-    deletePost(id);
+  const handleDeletePost = async (id: string) => {
+    try {
+      await dispatch(resetEditingPost());
+      await deletePost(id);
+    } catch (error) {
+
+    }
   }
   return (
     <>

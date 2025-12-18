@@ -7,12 +7,13 @@ import {
   useGetPostQuery,
   useUpdatePostMutation,
 } from "../../blog.service";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../../../store";
 import {
   isEntityError,
   isFetchBaseQueryError,
 } from "../../../../utils/helpers";
+import { resetEditingPost } from "../../blog.slice";
 
 const inititalState: Omit<Post, "id"> = {
   description: "",
@@ -22,11 +23,12 @@ const inititalState: Omit<Post, "id"> = {
   title: "",
 };
 
-type FormError =
-  | {
-      [key in keyof typeof inititalState]: string;
-    }
-  | null;
+type FormError = // copy những trường init sang FormError
+
+    | {
+        [key in keyof typeof inititalState]: string;
+      }
+    | null;
 
 export default function CreatePost() {
   const [formData, setFormData] = useState<Omit<Post, "id"> | Post>(
@@ -36,10 +38,12 @@ export default function CreatePost() {
 
   const isStartingPost = useSelector((state: RootState) => state.blog.postId);
   const { data, isLoading, isFetching } = useGetPostQuery(isStartingPost, {
-    skip: !isStartingPost,
+    skip: !isStartingPost, // cái gì uncontrol component nên skip nó
   });
 
   const [updatePost, updatePostResult] = useUpdatePostMutation();
+
+  const dispatch = useDispatch();
 
   // === Lỗi từ thằng rtk query
   // với thằng rtk query thì trả về 3 kiểu lỗi serial | fetchbase query | undefinded
@@ -47,10 +51,14 @@ export default function CreatePost() {
   // ví dụ bên service trong build mà trong query => throw error thì sẽ nhảy vào Serialize, còn nếu fetch api bị lỗi nhảy vào fetchbasequery
 
   // === Lỗi từ server
-  // Nếu lỗi từ json server thì hiển thị form thông báo lỗi
-  // nếu lỗi từ code logic throw errro thì toast message
+  // Nếu lỗi từ json server có dạng error có message: thì hiển thị trên form thông báo lỗi
+  // còn nếu error: string thì hiển thị toast message
+
+  // còn đối với kiểu lỗi từ code logic thì không bắt được với isRejected bên middleware mà phải
+  // bắt thông qua isRejected của redux toolkit
+  // cía này phải bắt qua customError
   const errorForm: FormError = useMemo(() => {
-    const errorResult = isStartingPost
+    const errorResult = isStartingPost // reducer
       ? updatePostResult.error
       : addPostResult.error;
 
@@ -71,10 +79,16 @@ export default function CreatePost() {
   }, [isStartingPost, updatePostResult, addPostResult]);
 
   useEffect(() => {
-    if (data) {
+    if (isStartingPost && data) {
       setFormData(data);
+    } else {
+      setFormData(inititalState);
     }
-  }, [data]); // nhớ có thêm [data] để nhập text thay đổi thì rerender data thay đổi vào form
+  }, [data, isStartingPost]); // nhớ có thêm [data] để nhập text thay đổi thì rerender data thay đổi vào form
+
+  useEffect(() => {
+    console.log("isStartingPost", isStartingPost);
+  });
 
   const handleSumbit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -84,13 +98,22 @@ export default function CreatePost() {
           id: isStartingPost,
           body: formData as Post,
         }).unwrap(); // nhớ dùng unwrap để có thể nhảy vào catch lỗi nha
+        await dispatch(resetEditingPost());
       } else {
         await addPost(formData).unwrap();
+        await dispatch(resetEditingPost());
       }
       setFormData(inititalState);
     } catch (error) {
       // console.log(error);
     }
+  };
+
+  const handleCancel = async () => {
+    try {
+      await dispatch(resetEditingPost());
+    } catch (error) {}
+    setFormData(inititalState);
   };
 
   return (
@@ -248,6 +271,7 @@ export default function CreatePost() {
               <button
                 type="reset"
                 className="group relative mb-2 mr-2 inline-flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 p-0.5 text-sm font-medium text-gray-900 focus:outline-none focus:ring-4 focus:ring-red-100 group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:text-white dark:hover:text-gray-900 dark:focus:ring-red-400"
+                onClick={handleCancel}
               >
                 <span className="relative rounded-md bg-white px-5 py-2.5 transition-all duration-75 ease-in group-hover:bg-opacity-0 dark:bg-gray-900">
                   Cancel

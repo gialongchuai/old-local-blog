@@ -12,13 +12,16 @@ const blogSlice = createSlice({
   name: "blog",
   initialState: initialState,
   reducers: {
-    startEditingPost: (state, action: PayloadAction<string>) => {
+    startEditingPost: (state, action: PayloadAction<string>) => { // kiểm tra đang trạng thái edit
       state.postId = action.payload;
+    },
+    resetEditingPost: (state, ation: PayloadAction<void>) => {
+      state.postId = "";
     }
   },
 });
 
-export const { startEditingPost} = blogSlice.actions;
+export const { startEditingPost, resetEditingPost} = blogSlice.actions;
 
 const blogReducer = blogSlice.reducer;
 

@@ -26,7 +26,7 @@ server.use((req, res, next) => {
       });
     }
     if(req.body.title === 'admin') {
-      return res.status(500),send({
+      return res.status(500).send({ // ,send mà nó không báo lỗi lạ thật, nên khi toast rra là Reject không như mong đợi là Loi admin roi: chú ý nhé
         error: 'Loi admin roi!'
       })
     }
